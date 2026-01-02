@@ -101,7 +101,7 @@ BEGIN
         i.task_id, i.task_name, i.descriptions, i.starts_date, i.due_date, i.prioritys, i.statuss, 'INSERT'
     FROM inserted i
     LEFT JOIN deleted d ON i.task_id = d.task_id
-    WHERE d.task_id IS NULL; -- Only new rows
+    WHERE d.task_id IS NULL; 
 
     INSERT INTO task_audit (task_id, task_name, descriptions, starts_date, due_date, prioritys, statuss, action_type)
     SELECT 
