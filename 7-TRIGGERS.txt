@@ -1,0 +1,11 @@
+Triggers
+
+--- Create a Trigger on the Project Table:
+
+1. Create a trigger named trg_UpdateProjectStatus on the Project table.
+Note this needs to Automatically update the Status of a project to 'Completed' when the EndDate is set.
+
+--- Create a Trigger on the Task Table:
+
+1. Create a trigger named trg_AuditTaskChanges on the Task table.
+Note this needs to Automatically log changes to the Task table into a TaskAudit table whenever a task is updated.
