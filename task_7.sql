@@ -78,7 +78,8 @@ CREATE TABLE task_audit (
     statuss VARCHAR(70),
     action_type VARCHAR(10), 
     changed_by SYSNAME DEFAULT SUSER_SNAME(),
-    changed_on DATETIME DEFAULT GETDATE()
+    changed_on DATETIME2(0) NOT NULL DEFAULT SYSDATETIME()
+
     );
 GO
 
@@ -136,6 +137,4 @@ WHERE task_name = 'New Audit Test';
 
 -- 5. View audit log
 SELECT * FROM task_audit ORDER BY audit_id DESC;
-
 select * from task
-select * from task_audit
