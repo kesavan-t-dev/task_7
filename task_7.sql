@@ -109,83 +109,83 @@ AFTER INSERT, UPDATE, DELETE
 AS
 BEGIN
     SET NOCOUNT ON;
-    IF EXISTS (SELECT 1 FROM inserted)
+   IF EXISTS (SELECT 1 FROM inserted)
         AND NOT EXISTS (SELECT 1 FROM deleted)
-   BEGIN
-   INSERT INTO task_audit
-        (old_task_id, new_task_id,
-        old_task_name, new_task_name,
-        old_description, new_description,
-        old_start_date, new_start_date,
-        old_due_date, new_due_date,
-        old_priority, new_priority,
-        old_status, new_status,
-        action_type)
-        SELECT
-          i.task_id,i.task_id,
-          i.task_name,i.task_name,
-          i.description,i.description,
-          i.start_date,i.start_date,
-          i.due_date,i.due_date,
-          i.priority,i.priority,
-          i.status,i.status,
-           'INSERT'
-          FROM inserted i
-          LEFT JOIN deleted d
-          ON i.task_id = d.task_id
-          WHERE d.task_id IS NULL;
-     END
+           BEGIN
+           INSERT INTO task_audit
+                (old_task_id, new_task_id,
+                old_task_name, new_task_name,
+                old_description, new_description,
+                old_start_date, new_start_date,
+                old_due_date, new_due_date,
+                old_priority, new_priority,
+                old_status, new_status,
+                action_type)
+                SELECT
+                  i.task_id,i.task_id,
+                  i.task_name,i.task_name,
+                  i.description,i.description,
+                  i.start_date,i.start_date,
+                  i.due_date,i.due_date,
+                  i.priority,i.priority,
+                  i.status,i.status,
+                   'INSERT'
+                  FROM inserted i
+                  LEFT JOIN deleted d
+                  ON i.task_id = d.task_id
+                  WHERE d.task_id IS NULL;
+             END
      ELSE IF EXISTS (SELECT 1 FROM inserted)
        AND EXISTS (SELECT 1 FROM deleted)
-     BEGIN
-            INSERT INTO task_audit
-              (old_task_id, new_task_id,
-        old_task_name, new_task_name,
-        old_description, new_description,
-        old_start_date, new_start_date,
-        old_due_date, new_due_date,
-        old_priority, new_priority,
-        old_status, new_status,
-        action_type)
-            SELECT
-        d.task_id,d.task_id,
-        d.task_name,d.task_name,
-        d.description,d.description,
-        d.start_date,d.start_date,
-        d.due_date,d.due_date,
-        d.priority,d.priority,
-        d.status,d.status,
-        'UPDATE'
-      FROM deleted d
-   INNER JOIN inserted i
-      ON d.task_id = i.task_id;
-END
+         BEGIN
+              INSERT INTO task_audit
+                      (old_task_id, new_task_id,
+                old_task_name, new_task_name,
+                old_description, new_description,
+                old_start_date, new_start_date,
+                old_due_date, new_due_date,
+                old_priority, new_priority,
+                old_status, new_status,
+                action_type)
+              SELECT
+                d.task_id,d.task_id,
+                d.task_name,d.task_name,
+                d.description,d.description,
+                d.start_date,d.start_date,
+                d.due_date,d.due_date,
+                d.priority,d.priority,
+                d.status,d.status,
+                'UPDATE'
+              FROM deleted d
+           INNER JOIN inserted i
+              ON d.task_id = i.task_id;
+         END
     ELSE IF EXISTS (SELECT 1 FROM deleted)
       AND NOT EXISTS (SELECT 1 FROM inserted)
- BEGIN
-INSERT INTO task_audit
-    (old_task_id, new_task_id,
-        old_task_name, new_task_name,
-        old_description, new_description,
-        old_start_date, new_start_date,
-        old_due_date, new_due_date,
-        old_priority, new_priority,
-        old_status, new_status,
-        action_type)
-    SELECT
-    d.task_id,d.task_id,
-    d.task_name,d.task_name,
-    d.description,d.description,
-    d.start_date,d.start_date,
-    d.due_date,d.due_date,
-    d.priority,d.priority,
-    d.status,d.status,
-    'DELETE'
-    FROM deleted d
-    LEFT JOIN inserted i
-    ON d.task_id = i.task_id
-    WHERE i.task_id IS NULL;
-END
+         BEGIN
+            INSERT INTO task_audit
+                (old_task_id, new_task_id,
+                    old_task_name, new_task_name,
+                    old_description, new_description,
+                    old_start_date, new_start_date,
+                    old_due_date, new_due_date,
+                    old_priority, new_priority,
+                    old_status, new_status,
+                    action_type)
+            SELECT
+                d.task_id,d.task_id,
+                d.task_name,d.task_name,
+                d.description,d.description,
+                d.start_date,d.start_date,
+                d.due_date,d.due_date,
+                d.priority,d.priority,
+                d.status,d.status,
+                'DELETE'
+                FROM deleted d
+                LEFT JOIN inserted i
+                ON d.task_id = i.task_id
+                WHERE i.task_id IS NULL;
+        END
 END
 GO
 
