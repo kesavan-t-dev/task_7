@@ -99,69 +99,93 @@ select * from task_audit;
 GO
 
 -- drop if already exists 
-DROP TRIGGER IF EXISTS dbo.trg_audit_task_changes;
+DROP TRIGGER IF EXISTS dbo.trg_AuditTaskChanges;
 
 
 
-CREATE OR ALTER TRIGGER trg_audit_task_changes
-ON dbo.task
+CREATE TRIGGER trg_AuditTaskChanges
+ON task
 AFTER INSERT, UPDATE, DELETE
 AS
 BEGIN
     SET NOCOUNT ON;
-
-    INSERT INTO dbo.task_audit (
-        old_task_id, new_task_id,
+    IF EXISTS (SELECT 1 FROM inserted)
+        AND NOT EXISTS (SELECT 1 FROM deleted)
+   BEGIN
+   INSERT INTO task_audit
+        (old_task_id, new_task_id,
         old_task_name, new_task_name,
         old_description, new_description,
         old_start_date, new_start_date,
         old_due_date, new_due_date,
         old_priority, new_priority,
         old_status, new_status,
-        action_type
-    )
-
-    SELECT
-        NULL, i.task_id,
-        NULL, i.task_name,
-        NULL, i.description,
-        NULL, i.start_date,
-        NULL, i.due_date,
-        NULL, i.priority,
-        NULL, i.status,
-        'INSERT'
-    FROM inserted i
-    LEFT JOIN deleted d ON d.task_id = i.task_id
-    WHERE d.task_id IS NULL
-
-    UNION ALL
-
-    SELECT
-        d.task_id, i.task_id,
-        d.task_name, i.task_name,
-        d.description, i.description,
-        d.start_date, i.start_date,
-        d.due_date, i.due_date,
-        d.priority, i.priority,
-        d.status, i.status,
+        action_type)
+        SELECT
+          i.task_id,i.task_id,
+          i.task_name,i.task_name,
+          i.description,i.description,
+          i.start_date,i.start_date,
+          i.due_date,i.due_date,
+          i.priority,i.priority,
+          i.status,i.status,
+           'INSERT'
+          FROM inserted i
+          LEFT JOIN deleted d
+          ON i.task_id = d.task_id
+          WHERE d.task_id IS NULL;
+     END
+     ELSE IF EXISTS (SELECT 1 FROM inserted)
+       AND EXISTS (SELECT 1 FROM deleted)
+     BEGIN
+            INSERT INTO task_audit
+              (old_task_id, new_task_id,
+        old_task_name, new_task_name,
+        old_description, new_description,
+        old_start_date, new_start_date,
+        old_due_date, new_due_date,
+        old_priority, new_priority,
+        old_status, new_status,
+        action_type)
+            SELECT
+        d.task_id,d.task_id,
+        d.task_name,d.task_name,
+        d.description,d.description,
+        d.start_date,d.start_date,
+        d.due_date,d.due_date,
+        d.priority,d.priority,
+        d.status,d.status,
         'UPDATE'
-    FROM inserted i
-    INNER JOIN deleted d ON d.task_id = i.task_id
-
-    UNION ALL
-
+      FROM deleted d
+   INNER JOIN inserted i
+      ON d.task_id = i.task_id;
+END
+    ELSE IF EXISTS (SELECT 1 FROM deleted)
+      AND NOT EXISTS (SELECT 1 FROM inserted)
+ BEGIN
+INSERT INTO task_audit
+    (old_task_id, new_task_id,
+        old_task_name, new_task_name,
+        old_description, new_description,
+        old_start_date, new_start_date,
+        old_due_date, new_due_date,
+        old_priority, new_priority,
+        old_status, new_status,
+        action_type)
     SELECT
-        d.task_id, NULL,
-        d.task_name, NULL,
-        d.description, NULL,
-        d.start_date, NULL,
-        d.due_date, NULL,
-        d.priority, NULL,
-        d.status, NULL,
-        'DELETE'
+    d.task_id,d.task_id,
+    d.task_name,d.task_name,
+    d.description,d.description,
+    d.start_date,d.start_date,
+    d.due_date,d.due_date,
+    d.priority,d.priority,
+    d.status,d.status,
+    'DELETE'
     FROM deleted d
-    LEFT JOIN inserted i ON i.task_id = d.task_id
+    LEFT JOIN inserted i
+    ON d.task_id = i.task_id
     WHERE i.task_id IS NULL;
+END
 END
 GO
 
@@ -175,21 +199,19 @@ SELECT * FROM task_audit;
 
 -- Test INSERT
 INSERT INTO task (task_name, description, start_date, due_date, priority, status, project_id)
-VALUES ('New asd Test', 'Testing insert trigger', '2025-04-01', '2026-08-15', 'Low', 'Completed', 1);
+VALUES ('test sample', 'Testing insert trigger', '2025-04-01', '2026-04-18', 'Low', 'Completed', 1);
 
 SELECT * FROM task
 
 -- Test UPDATE
 UPDATE task
 SET  description ='testing update trigges'
-WHERE task_name = 'New asd Test';
+WHERE task_name = 'test sample';
 
 -- Test DELETE
 DELETE FROM task
-WHERE task_name = 'New  Test';
+WHERE task_name = 'test sample';
 
-DELETE FROM task
-WHERE task_id = 23
 
 --View audit log
 SELECT * FROM task_audit ORDER BY audit_id DESC;
