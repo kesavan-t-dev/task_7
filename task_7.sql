@@ -14,7 +14,7 @@ Note this needs to Automatically update the Status of a project to 'Completed' w
 
 DROP TRIGGER IF EXISTS dbo.trg_update_project_status;
 
-CREATE TRIGGER trg_update_project_status
+CREATE OR ALTER TRIGGER trg_update_project_status
 ON project
 AFTER UPDATE
 AS
@@ -45,8 +45,8 @@ FROM project
 
 -- Update end_date 
 UPDATE project
-SET end_date = '2025-12-22'
-WHERE project_id = 6 ;
+SET end_date = '2026-12-22'
+WHERE project_id = 16 ;
 
 SELECT * FROM project 
 
@@ -69,20 +69,31 @@ IF OBJECT_ID('dbo.task_audit', 'U') IS NOT NULL
 
 GO
 
+DROP TABLE IF EXISTS task_audit;
+GO
+
 CREATE TABLE task_audit (
     audit_id INT IDENTITY(1,1) PRIMARY KEY,
-    task_id INT,
-    task_name VARCHAR(150),
-    description VARCHAR(255),
-    start_date DATE,
-    due_date DATE,
-    priority VARCHAR(150),
-    status VARCHAR(70),
+    old_task_id INT NULL,
+    new_task_id INT NULL,
+    old_task_name VARCHAR(150) NULL,
+    new_task_name VARCHAR(150) NULL,
+    old_description VARCHAR(255) NULL,
+    new_description VARCHAR(255) NULL,
+    old_start_date DATE NULL,
+    new_start_date DATE NULL,
+    old_due_date DATE NULL,
+    new_due_date DATE NULL,
+    old_priority VARCHAR(150) NULL,
+    new_priority VARCHAR(150) NULL,
+    old_status VARCHAR(70) NULL,
+    new_status VARCHAR(70) NULL,
     changed_by SYSNAME DEFAULT SUSER_SNAME(),
     changed_on DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
-    action_type VARCHAR(10) 
-    );
+    action_type VARCHAR(10) NOT NULL
+);
 GO
+
 
 select * from task_audit;
 GO
@@ -90,33 +101,56 @@ GO
 -- drop if already exists 
 DROP TRIGGER IF EXISTS dbo.trg_audit_task_changes;
 
---create trigger
-CREATE TRIGGER trg_AuditTaskChanges
+CREATE OR ALTER TRIGGER trg_AuditTaskChanges
 ON task
 AFTER INSERT, UPDATE, DELETE
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO task_audit (task_id, task_name, description, start_date, due_date, priority, status, action_type)
+    INSERT INTO task_audit (
+        old_task_id, new_task_id, old_task_name, new_task_name,
+        old_description, new_description, old_start_date, new_start_date,
+        old_due_date, new_due_date, old_priority, new_priority,
+        old_status, new_status, action_type
+    )
     SELECT 
-        i.task_id, i.task_name, i.description, i.start_date, i.due_date, i.priority, i.status, 'INSERT'
+        i.task_id, i.task_id, i.task_name, i.task_name,
+        i.description, i.description, i.start_date, i.start_date,
+        i.due_date, i.due_date, i.priority, i.priority,
+        i.status, i.status, 'INSERT'
     FROM inserted i
     LEFT JOIN deleted d ON i.task_id = d.task_id
-    WHERE d.task_id IS NULL; 
+    WHERE d.task_id IS NULL;
 
-    INSERT INTO task_audit (task_id, task_name, description, start_date, due_date, priority, status, action_type)
+    INSERT INTO task_audit (
+        old_task_id, new_task_id, old_task_name, new_task_name,
+        old_description, new_description, old_start_date, new_start_date,
+        old_due_date, new_due_date, old_priority, new_priority,
+        old_status, new_status, action_type
+    )
     SELECT 
-        d.task_id, d.task_name, d.description, d.start_date, d.due_date, d.priority, d.status, 'UPDATE'
+        d.task_id, i.task_id, d.task_name, i.task_name,
+        d.description, i.description, d.start_date, i.start_date,
+        d.due_date, i.due_date, d.priority, i.priority,
+        d.status, i.status, 'UPDATE'
     FROM deleted d
     INNER JOIN inserted i ON d.task_id = i.task_id;
 
-    INSERT INTO task_audit (task_id, task_name, description, start_date, due_date, priority, status, action_type)
+    INSERT INTO task_audit (
+        old_task_id, new_task_id, old_task_name, new_task_name,
+        old_description, new_description, old_start_date, new_start_date,
+        old_due_date, new_due_date, old_priority, new_priority,
+        old_status, new_status, action_type
+    )
     SELECT 
-        d.task_id, d.task_name, d.description, d.start_date, d.due_date, d.priority, d.status, 'DELETE'
+        d.task_id, d.task_id, d.task_name, d.task_name,
+        d.description, d.description, d.start_date, d.start_date,
+        d.due_date, d.due_date, d.priority, d.priority,
+        d.status, d.status, 'DELETE'
     FROM deleted d
     LEFT JOIN inserted i ON d.task_id = i.task_id
-    WHERE i.task_id IS NULL; 
+    WHERE i.task_id IS NULL;
 END
 GO
 
@@ -128,16 +162,19 @@ SELECT * FROM task_audit;
 
 -- Test INSERT
 INSERT INTO task (task_name, description, start_date, due_date, priority, status, project_id)
-VALUES ('New Audit Test', 'Testing insert trigger', '2025-08-01', '2025-08-15', 'High', 'Pending', 1);
+VALUES ('New  Test', 'Testing insert trigger', '2025-04-01', '2026-08-15', 'Low', 'Completed', 1);
 
 -- Test UPDATE
 UPDATE task
-SET status = 'Completed'
-WHERE task_name = 'New Audit Test';
+SET  description ='testing update triggers'
+WHERE task_name = 'New  Test';
 
 -- Test DELETE
 DELETE FROM task
-WHERE task_name = 'New Audit Test';
+WHERE task_name = 'New  Test';
+
+DELETE FROM task
+WHERE task_id = 23
 
 --View audit log
 SELECT * FROM task_audit ORDER BY audit_id DESC;
