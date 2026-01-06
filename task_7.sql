@@ -20,14 +20,18 @@ AFTER UPDATE
 AS
 BEGIN
     SET NOCOUNT ON;
+
     UPDATE p
-    SET status = 'Completed'
+    SET status = CASE 
+                    WHEN i.end_date < CAST(GETDATE() AS DATE) THEN 'Completed'
+                    ELSE 'In Progress'
+                 END
     FROM project p
-    INNER JOIN 
-    inserted i ON p.project_id = i.project_id
-    WHERE i.end_date <= CAST(GETDATE() AS DATE);
+    INNER JOIN inserted i 
+        ON p.project_id = i.project_id;
 END
 GO
+
 /*
 SELECT name, is_instead_of_trigger  
 FROM sys.triggers    
@@ -37,16 +41,14 @@ WHERE type = 'TR';
 ---- Check current status before update
 SELECT project_id, project_name, end_date, status
 FROM project
-WHERE project_id = 2;
 
--- Update end_date to a past date
+
+-- Update end_date 
 UPDATE project
-SET end_date = '2025-12-04'
-WHERE project_id = 2;
+SET end_date = '2025-12-22'
+WHERE project_id = 6 ;
 
-SELECT * FROM project
-
-
+SELECT * FROM project 
 
 
 /*
@@ -76,10 +78,9 @@ CREATE TABLE task_audit (
     due_date DATE,
     priority VARCHAR(150),
     status VARCHAR(70),
-    action_type VARCHAR(10), 
     changed_by SYSNAME DEFAULT SUSER_SNAME(),
-    changed_on DATETIME2(0) NOT NULL DEFAULT SYSDATETIME()
-
+    changed_on DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    action_type VARCHAR(10) 
     );
 GO
 
@@ -90,7 +91,7 @@ GO
 DROP TRIGGER IF EXISTS dbo.trg_audit_task_changes;
 
 --create trigger
-CREATE OR ALTER TRIGGER trg_AuditTaskChanges
+CREATE TRIGGER trg_AuditTaskChanges
 ON task
 AFTER INSERT, UPDATE, DELETE
 AS
